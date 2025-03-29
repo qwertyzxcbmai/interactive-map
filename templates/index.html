@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Интерактивная карта (Переключатель тем)</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha512-SfTiTlX6kk+qitfevl/7LibUOeJWlt9rbyDn92a1DqWOw9vWG2MFoays0sgObmWazO5BQPiFucnnEAjpAB+/Sw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css" integrity="sha512-cUoWMYmv4H9TGPZnNd/Jvn71Aw0IYHRjEJpAxRqOgtwcaxG9AfhWA6i9GSj/S/mKKh3q9YY9TAU0YRmv8ei4pQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        :root {
+            --text-color-light: #f0f0f0; --text-color-dark: #222;
+            --bg-color-light: #ffffff; --bg-color-dark: #2b2b2b;
+            --panel-bg-light: #ffffff;
+            --panel-bg-dark: rgba(50, 50, 50, 0.9);
+            --border-color-light: #ccc; --border-color-dark: #555;
+            --button-bg-light: #f0f0f0; --button-bg-dark: #444;
+            --button-hover-bg-light: #e0e0e0; --button-hover-bg-dark: #555;
+            --input-bg: var(--button-bg-dark);
+            --input-text-color: var(--text-color-light);
+            --input-border-color: #E0E0E0;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --popup-bg: var(--bg-color-light); --popup-text: var(--text-color-dark); --popup-border: #eee;
+            --star-filled: #f5b301; --star-empty: #d0d0d0; --rating-value-color: #666;
+            --panel-bg: var(--panel-bg-light);
+        }
+        body.dark-theme {
+            --text-color: var(--text-color-light); --bg-color: var(--bg-color-dark);
+            --panel-bg: var(--panel-bg-dark);
+            --border-color: var(--border-color-dark);
+            --button-bg: var(--button-bg-dark); --button-hover-bg: var(--button-hover-bg-dark);
+            --input-bg: #333; --input-text-color: var(--text-color);
+            --input-border-color: #E0E0E0; --shadow-color: rgba(0, 0, 0, 0.5);
+            --popup-bg: #3a3a3a; --popup-text: var(--text-color); --popup-border: #555;
+            --star-empty: #555; --rating-value-color: #bbb;
+        }
+        html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
+        #map { height: 100%; width: 100%; padding-top: 70px; box-sizing: border-box; }
+        .top-panel { position: fixed; top: 0; left: 0; width: 100%; height: 70px; background-color: var(--panel-bg); color: var(--text-color); z-index: 1000; box-shadow: 0 2px 5px var(--shadow-color); display: flex; align-items: center; padding: 0 15px; box-sizing: border-box; }
+        .top-panel > * { margin-right: 10px; } .top-panel > *:last-child { margin-right: 0; }
+        #citySearchInput { width: 227px; height: 50px; box-sizing: border-box; border-radius: 10px; border: 2px solid var(--input-border-color); background-color: var(--input-bg); padding: 0 15px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 20px; color: var(--input-text-color); }
+        .top-panel button { padding: 8px 15px; height: 50px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--button-bg); color: var(--text-color); font-size: 14px; cursor: pointer; transition: background-color 0.2s ease; vertical-align: middle; }
+        .top-panel button:hover { background-color: var(--button-hover-bg); border-color: #777; }
+        #citySearchButton { height: 50px; width: 50px; flex-shrink: 0; margin-left: 5px; padding: 0; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+        .top-panel .right-group { margin-left: auto; display: flex; align-items: center; }
+        .top-panel .right-group > * { margin-left: 10px; } .top-panel .right-group > *:first-child { margin-left: 0; }
+        #resetMapButton { min-width: 100px; }
+        #themeToggleButton { width: 50px; padding: 0; font-size: 20px; display: flex; align-items: center; justify-content: center;}
+        .leaflet-popup-content-wrapper { border-radius: 8px; background-color: var(--popup-bg); box-shadow: 0 3px 14px var(--shadow-color); border: 1px solid var(--border-color); }
+        .leaflet-popup-tip { background: var(--popup-bg); }
+        .leaflet-popup-content { margin: 15px 20px; line-height: 1.5; font-size: 14px; min-width: 180px; color: var(--popup-text); }
+        .leaflet-popup-content h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--popup-border); font-size: 16px; font-weight: bold; color: var(--popup-text); }
+        .leaflet-popup-content p { margin: 8px 0; color: var(--popup-text); }
+        .leaflet-popup-content .rating-stars { margin-top: 10px; font-size: 18px; color: var(--star-filled); }
+        .leaflet-popup-content .rating-stars .empty-star { color: var(--star-empty); }
+        .leaflet-popup-content .rating-stars .rating-value { font-size: 13px; color: var(--rating-value-color); margin-left: 5px; vertical-align: middle; }
+        .leaflet-container a.leaflet-popup-close-button { color: var(--popup-text) !important; padding: 8px 8px 0 0; }
+        .leaflet-container a.leaflet-popup-close-button:hover { background-color: transparent; color: #bbb !important; }
+    </style>
+</head>
+<body class="dark-theme">
+
+    <div class="top-panel">
+        <input type="text" id="citySearchInput" placeholder="Find City..." value="">
+        <button id="citySearchButton">🔍</button>
+        <span class="right-group">
+             <button id="resetMapButton">Reset map</button>
+             <button id="themeToggleButton">☀️/🌙</button>
+        </span>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.min.js" integrity="sha512-8BqQ2RH4L4sQhV41ZB24fQTTuHMjiFSNOubIsr9中iFfNFv+kWSPCH0zXnawU4HeZQdgNZiRgs7kbQbhUHR/w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+      function submitMarkerData(lat, lon) { const nameInput = document.getElementById('markerName'); const descInput = document.getElementById('markerDesc'); const ratingInput = document.getElementById('markerRating'); const name = nameInput ? nameInput.value : 'Без имени'; const description = descInput ? descInput.value : ''; const ratingRaw = ratingInput ? ratingInput.value : null; const rating = ratingRaw !== null && ratingRaw !== '' ? parseFloat(ratingRaw) : null; if (rating === null || isNaN(rating) || rating < 0 || rating > 10) { alert('Рейтинг должен быть числом от 0 до 10'); return; } const ratingToSave = parseFloat(rating.toFixed(1)); const markerPayload = { lat, lon, name, description, rating: ratingToSave }; fetch('/add_marker', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(markerPayload) }).then(response => response.json()).then(data => { if (data.status === 'ok') { console.log('Маркер добавлен:', markerPayload, 'ID:', data.id); markerPayload.id = data.id; addMarkerToMap(markerPayload); window.mapObject.closePopup(); } else { alert('Ошибка сервера: ' + (data.message || 'Неизвестная ошибка')); console.error('Ошибка от /add_marker:', data); } }).catch(error => { alert('Сетевая ошибка.'); console.error('Ошибка fetch при добавлении:', error); }); }
+      function addMarkerToMap(markerData) { if (!window.mapObject) { console.error("Map object not ready for addMarkerToMap"); return; } if (typeof markerData.lat !== 'number' || typeof markerData.lon !== 'number' || typeof markerData.id === 'undefined') { console.warn('Неверные данные или нет ID:', markerData); return; } const isDark = document.body.classList.contains('dark-theme'); const iconToUse = isDark ? blueIcon : redIcon; const popupContent = `<h4>${markerData.name || 'Без имени'}</h4><p>${markerData.description || ''}</p>${generateStars(markerData.rating)}<hr style="margin: 5px 0;"><button type="button" onclick="deleteMarker(${markerData.id})">Удалить</button>`; const marker = L.marker([markerData.lat, markerData.lon], { icon: iconToUse }).addTo(markerLayerGroup).bindPopup(popupContent); markersOnMap[markerData.id] = marker; }
+      function generateStars(rating) { const maxStars = 10; let starsHtml = ''; const filledStars = Math.round(rating); if (typeof rating !== 'number' || isNaN(rating) || rating < 0 || rating > 10) { return ''; } for (let i = 1; i <= maxStars; i++) { starsHtml += (i <= filledStars) ? '★' : '<span class="empty-star">☆</span>'; } starsHtml += `<span class="rating-value">(${rating.toFixed(1)}/10)</span>`; return `<div class="rating-stars">${starsHtml}</div>`; }
+      function deleteMarker(id) { if (!id) return; if (confirm(`Вы уверены, что хотите удалить маркер ID ${id}?`)) { fetch(`/delete_marker/${id}`, { method: 'DELETE', }).then(response => response.json()).then(data => { if (data.status === 'ok') { console.log(data.message); if (markersOnMap[id]) { markerLayerGroup.removeLayer(markersOnMap[id]); delete markersOnMap[id]; } } else { alert('Ошибка при удалении: ' + (data.message || 'Неизвестная ошибка')); console.error('Ошибка от /delete_marker:', data); } }).catch(error => { alert('Сетевая ошибка при удалении.'); console.error('Ошибка fetch при удалении:', error); }); } }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        window.mapObject = L.map('map', { zoomControl: false });
+        window.mapObject.setView([48.85, 13.35], 5);
+        const lightTileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const lightAttribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+        const lightTileLayer = L.tileLayer(lightTileUrl, { maxZoom: 19, attribution: lightAttribution });
+        const darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        const darkAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+        const darkTileLayer = L.tileLayer(darkTileUrl, { maxZoom: 19, attribution: darkAttribution });
+        let currentTileLayer;
+        L.control.zoom({ position: 'bottomright' }).addTo(window.mapObject);
+        window.blueIcon = L.AwesomeMarkers.icon({ icon: 'circle', markerColor: 'blue', prefix: 'fa', spin:false }); // Добавил spin:false на всякий случай
+        window.redIcon = L.AwesomeMarkers.icon({ icon: 'circle', markerColor: 'red', prefix: 'fa', spin:false });
+        window.markerLayerGroup = L.layerGroup().addTo(window.mapObject);
+        window.markersOnMap = {};
+        function fetchAndDisplayMarkers() { markerLayerGroup.clearLayers(); markersOnMap = {}; fetch('/get_markers').then(response => response.json()).then(markers => { markers.forEach(markerData => { addMarkerToMap(markerData); }); }).catch(error => { console.error('Ошибка при загрузке маркеров:', error); }); }
+        const themeToggleButton = document.getElementById('themeToggleButton');
+        const bodyEl = document.body;
+        function updateThemeUI() { const isDark = bodyEl.classList.contains('dark-theme'); if (themeToggleButton) { themeToggleButton.innerHTML = isDark ? '☀️' : '🌙'; } const targetLayer = isDark ? darkTileLayer : lightTileLayer; if (currentTileLayer !== targetLayer) { if (currentTileLayer) { window.mapObject.removeLayer(currentTileLayer); } targetLayer.addTo(window.mapObject); currentTileLayer = targetLayer; } fetchAndDisplayMarkers(); }
+        updateThemeUI();
+        if (themeToggleButton) { themeToggleButton.addEventListener('click', function() { bodyEl.classList.toggle('dark-theme'); updateThemeUI(); console.log("Switched to " + (bodyEl.classList.contains('dark-theme') ? "Dark" : "Light") + " theme"); }); } else { console.error('Buttom #themeToggleButton not finded!'); }
+        window.mapObject.on('click', function(e) { const lat = e.latlng.lat; const lon = e.latlng.lng; const formHtml = `<b>Add marker</b><br>Coordinate: ${lat.toFixed(4)}, ${lon.toFixed(4)}<br><br><label for="markerName">Name:</label><br><input type="text" id="markerName" name="name" size="20"><br><br><label for="markerDesc">description:</label><br><textarea id="markerDesc" name="description" rows="2" cols="20"></textarea><br><br><label for="markerRating">rating (0-10):</label><br> <input type="number" id="markerRating" name="rating" min="0" max="10" step="0.5" value="5" size="3"><br><br><button type="button" onclick="submitMarkerData(${lat}, ${lon})">save</button>`; L.popup().setLatLng(e.latlng).setContent(formHtml).openOn(window.mapObject); });
+        const cityInput = document.getElementById('citySearchInput'); const searchButton = document.getElementById('citySearchButton');
+        function searchCity() { const cityName = cityInput.value.trim(); if (!cityName) { alert('Город введи, ну!'); return; } const apiUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1&accept-language=ru`; console.log('Стучимся в Nominatim:', apiUrl); fetch(apiUrl).then(response => { if (!response.ok) { throw new Error('Nominatim отвалился'); } return response.json(); }).then(data => { console.log('Nominatim say:', data); if (data && data.length > 0) { const lat = parseFloat(data[0].lat); const lon = parseFloat(data[0].lon); window.mapObject.flyTo([lat, lon], 13); } else { alert(`Фиг знает, где твой "${cityName}"...`); } }).catch(error => { console.error('Ошибка поиска:', error); alert('Ошибка поиска города.'); }); }
+        if (searchButton) { searchButton.addEventListener('click', searchCity); } if (cityInput) { cityInput.addEventListener('keydown', function(event) { if (event.keyCode === 13) { searchCity(); } }); }
+        const resetButton = document.getElementById('resetMapButton');
+        if (resetButton) { resetButton.addEventListener('click', function() { window.mapObject.setView([48.85, 13.35], 5); }); }
+      });
+    </script>
+
+</body>
+</html>
