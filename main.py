@@ -57,7 +57,7 @@ def add_marker():
     try:
         lat = float(data['lat'])
         lon = float(data['lon'])
-        name = data.get('name', 'Без имени')
+        name = data.get('name', 'No name')
         description = data.get('description', '')
         rating_val = data['rating']
 
